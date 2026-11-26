@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { Film } from '@/config/portfolio'
+import { embedUrl } from '@/lib/video'
 import { Close, Play } from './Icons'
 
 interface Props {
@@ -47,7 +48,19 @@ export function VideoLightbox({ film, onClose }: Props) {
               <Close />
             </button>
           </div>
-          {film.src ? (
+          {film.video ? (
+            <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-espresso">
+              <iframe
+                key={embedUrl(film.video)}
+                src={embedUrl(film.video)}
+                title={film.title}
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
+                className="absolute inset-0 h-full w-full border-0"
+              />
+            </div>
+          ) : film.src ? (
             <video
               key={film.src}
               src={film.src}

@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { HERO_FILMS } from '@/config/portfolio'
+import { resolveFilms } from '@/lib/server/films'
 import { PROCESS } from '@/config/services'
 import { SITE } from '@/config/site'
 import { CONSULTATION } from '@/shared/config/consultation'
 import { FilmCard } from '@/components/FilmCard'
 import { ArrowRight, Star } from '@/components/Icons'
 
-export function Hero() {
+export async function Hero() {
+  const films = await resolveFilms(HERO_FILMS)
   return (
     <section id="top" aria-labelledby="hero-title" className="px-2 pt-3 sm:px-3 lg:px-4">
       <div className="overflow-hidden rounded-[24px] bg-espresso text-cream sm:rounded-[32px]">
@@ -54,17 +56,17 @@ export function Hero() {
           <div className="flex min-w-0 flex-1 flex-col gap-3.5">
             <div className="film-wall relative h-[420px] overflow-hidden sm:h-[520px] lg:h-[600px]">
               <div className="film-track flex flex-col gap-[18px] pb-[18px]">
-                {[...HERO_FILMS, ...HERO_FILMS].map((film, i) => (
+                {[...films, ...films].map((film, i) => (
                   <FilmCard
                     key={`${film.id}-${i}`}
                     film={film}
                     index={i}
-                    decorative={i >= HERO_FILMS.length}
+                    decorative={i >= films.length}
                   />
                 ))}
               </div>
             </div>
-            {HERO_FILMS.some((f) => f.placeholder) && (
+            {films.some((f) => f.placeholder) && (
               <p className="text-center text-xs text-cream/70">Placeholder clips · tap any clip to play</p>
             )}
           </div>

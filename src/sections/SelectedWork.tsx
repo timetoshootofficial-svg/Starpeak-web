@@ -1,9 +1,11 @@
 import { SELECTED_WORK } from '@/config/portfolio'
+import { resolveFilms } from '@/lib/server/films'
 import { FilmCard } from '@/components/FilmCard'
 
-export function SelectedWork() {
-  const [featured, ...rest] = SELECTED_WORK
-  const hasPlaceholders = SELECTED_WORK.some((f) => f.placeholder)
+export async function SelectedWork() {
+  const films = await resolveFilms(SELECTED_WORK)
+  const [featured, ...rest] = films
+  const hasPlaceholders = films.some((f) => f.placeholder)
   return (
     <section id="work" aria-labelledby="work-title" className="rounded-[32px] bg-espresso py-18 text-cream sm:rounded-[50px] sm:py-28">
       <div className="container-page flex flex-col gap-14">
