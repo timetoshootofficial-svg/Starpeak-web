@@ -2,7 +2,9 @@
 
 Website for STARPEAK Media, an AI advertising film studio. It includes the homepage, film packages, ₹99 paid consultation booking, project inquiries, private project payment links, and the legal pages.
 
-**Stack:** React + TypeScript + Vite + Tailwind CSS (frontend) · Vercel Functions in `/api` (backend) · Supabase Postgres (database) · Razorpay (payments) · Resend (optional email).
+**Stack:** Next.js 16 (App Router) + React + TypeScript + Tailwind CSS · Next.js route handlers in `src/app/api` (backend) · Supabase Postgres (database) · Razorpay (payments) · Resend (optional email) · hosted on Vercel.
+
+Pages are pre-rendered to HTML at build time, so search engines and link previews see the full content.
 
 ---
 
@@ -13,16 +15,18 @@ Website for STARPEAK Media, an AI advertising film studio. It includes the homep
 | `src/config/site.ts` | Brand name, contact email, Instagram, legal entity details, navigation. **Replace every `[placeholder]`.** |
 | `src/config/portfolio.ts` | Hero film-wall clips and "Selected Work" films (video/poster paths). |
 | `src/config/services.ts` | Services list, "Why AI" points, hero process steps. |
-| `shared/config/packages.ts` | The three film packages: names, prices, durations, deliverables. Used by the site **and** the server's payment checks. |
-| `shared/config/consultation.ts` | ₹99 fee, slot times, booking window, closed weekdays, hold time. |
+| `src/shared/config/packages.ts` | The three film packages: names, prices, durations, deliverables. Used by the site **and** the server's payment checks. |
+| `src/shared/config/consultation.ts` | ₹99 fee, slot times, booking window, closed weekdays, hold time. |
 | `src/sections/*` | Homepage sections. |
-| `src/pages/legal/*` | Privacy Policy, Refund Policy, Terms & Conditions. |
-| `src/pages/ProjectPayment.tsx` | Private payment page at `/pay/SPP-…`. |
-| `api/*` | Serverless functions (order creation, payment verification, webhook, inquiries). |
+| `src/app/*` | Next.js routes: `/`, `/privacy-policy`, `/refund-policy`, `/terms`, `/pay/[reference]`, `sitemap.xml`, `robots.txt`. |
+| `src/legal/*` | Privacy Policy, Refund Policy, Terms & Conditions content. |
+| `src/components/ProjectPayment.tsx` | Private payment page at `/pay/SPP-…`. |
+| `src/app/api/*` | Server routes (order creation, payment verification, webhook, inquiries). |
+| `src/lib/server/*` | Server-only code: Supabase, Razorpay, email. Never sent to the browser. |
 | `supabase/migrations/*` | Database schema with Row Level Security. |
 | `tests/*` | Unit tests for validation, slots, signatures and amounts. |
 
-Brand colours are defined once in `src/index.css` (`--color-espresso`, `--color-cream`).
+Brand colours are defined once in `src/app/globals.css` (`--color-espresso`, `--color-cream`).
 
 ---
 
@@ -30,24 +34,19 @@ Brand colours are defined once in `src/index.css` (`--color-espresso`, `--color-
 
 ```bash
 npm install
-npm run dev          # UI only, at http://localhost:5173 — booking shows "not open yet"
+cp .env.example .env.local   # fill in test keys (optional for UI work)
+npm run dev                  # http://localhost:3000 — site and API together
 ```
 
-For the full site with the API (bookings, payments, inquiries), use the Vercel CLI:
-
-```bash
-npm i -g vercel
-vercel link
-cp .env.example .env.local   # fill in test keys
-vercel dev                   # http://localhost:3000
-```
+Without keys the site still runs; booking shows "Online booking isn't open yet".
 
 Other commands:
 
 ```bash
 npm test             # unit tests
-npm run typecheck    # TypeScript for app + API
-npm run build        # production build into dist/
+npm run typecheck    # TypeScript
+npm run build        # production build
+npm start            # serve the production build
 ```
 
 ---
@@ -58,9 +57,9 @@ npm run build        # production build into dist/
 2. Open **SQL Editor**, paste `supabase/migrations/20261126000000_init.sql`, and run it.
 3. From **Project Settings → API**, copy the **Project URL** → `SUPABASE_URL` and the **service_role** key → `SUPABASE_SERVICE_ROLE_KEY`.
 
-Security: RLS is enabled on every table with no public policies, so the public (anon) key can't read or write anything. Only the serverless functions, using the service-role key, touch the data. Never put the service-role key in a `VITE_` variable.
+Security: RLS is enabled on every table with no public policies, so the public (anon) key can't read or write anything. Only the serverless functions, using the service-role key, touch the data. Never put the service-role key in a `NEXT_PUBLIC_` variable.
 
-If you change a package price in `shared/config/packages.ts`, also update the `package_price` check in the migration (run an `alter table` in SQL Editor).
+If you change a package price in `src/shared/config/packages.ts`, also update the `package_price` check in the migration (run an `alter table` in SQL Editor).
 
 ## Set up Razorpay
 
@@ -87,14 +86,11 @@ Create a [Resend](https://resend.com) account, verify your domain, then set `RES
 
 ## Deploy to Vercel
 
-1. Push this folder to a GitHub repository and import it in Vercel. The framework is detected as Vite.
+1. Import the GitHub repository in Vercel. Framework preset: **Next.js** (detected automatically); leave build settings as default.
 2. Add every variable from `.env.example` under **Settings → Environment Variables** (Production, plus Preview if you want).
 3. Deploy, then add your domain and update:
-   - `VITE_SITE_URL` and `SITE_URL` → `https://your-domain`, then redeploy.
-   - The domain in `public/robots.txt` and `public/sitemap.xml`.
+   - `NEXT_PUBLIC_SITE_URL` and `SITE_URL` → `https://your-domain`, then redeploy (sitemap, robots and share links use it).
    - The Razorpay webhook URL.
-
-`vercel.json` rewrites page routes to the SPA and leaves `/api/*` to the functions.
 
 ---
 
@@ -121,7 +117,7 @@ returning project_reference;
 
 4. Send the client `https://your-domain/pay/<project_reference>`. They review the scope, accept the terms, and pay. The booking moves to `confirmed` / `paid` automatically.
 
-`package_name` and `package_price` must match `shared/config/packages.ts`, otherwise the payment page refuses the booking.
+`package_name` and `package_price` must match `src/shared/config/packages.ts`, otherwise the payment page refuses the booking.
 
 ---
 
@@ -130,6 +126,6 @@ returning project_reference;
 - [ ] Replace every `[placeholder]` in `src/config/site.ts` (email, Instagram, legal entity, address, jurisdiction, privacy email).
 - [ ] Review the legal pages in `src/pages/legal/`, fill their `[placeholders]`, and have them checked by a legal professional.
 - [ ] Add real films and posters (`public/videos`, `public/posters`) and update `src/config/portfolio.ts`.
-- [ ] Set consultation times and closed days in `shared/config/consultation.ts`.
+- [ ] Set consultation times and closed days in `src/shared/config/consultation.ts`.
 - [ ] Run the Supabase migration, set all environment variables, and configure the Razorpay webhook.
 - [ ] Make a full test-mode payment for a consultation and a project, then switch to live keys.

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { bookableDates, isBookableSlot, istDateString, istToInstant, openTimesFor } from '../shared/slots.js'
-import { REFERENCE_RE, validateConsultation, validateProjectInquiry } from '../shared/validation.js'
-import { CONSULTATION } from '../shared/config/consultation.js'
-import { newReference } from '../api/_lib/reference.js'
+import { bookableDates, isBookableSlot, istDateString, istToInstant, openTimesFor } from '@/shared/slots'
+import { REFERENCE_RE, validateConsultation, validateProjectInquiry } from '@/shared/validation'
+import { CONSULTATION } from '@/shared/config/consultation'
+import { newReference } from '@/lib/server/reference'
 
 // Wednesday 25 Nov 2026, 09:00 IST
 const NOW = istToInstant('2026-11-25', '09:00')

@@ -1,4 +1,4 @@
-import { CONSULTATION } from '../../shared/config/consultation'
+import { CONSULTATION } from '@/shared/config/consultation'
 import { ConsultationBooking } from './ConsultationBooking'
 
 const STEPS = [

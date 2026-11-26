@@ -1,19 +1,22 @@
-import type { Film } from '../config/portfolio'
+'use client'
+
+import type { Film } from '@/config/portfolio'
 import { Play } from './Icons'
+import { useOpenFilm } from './FilmPlayer'
 
 const TONES = ['tone-1', 'tone-3', 'tone-2', 'tone-4']
 
 interface Props {
   film: Film
   index: number
-  onOpen: (film: Film) => void
   /** Duplicated cards in the looping wall are hidden from screen readers and Tab. */
   decorative?: boolean
   size?: 'sm' | 'lg'
 }
 
 /** A 16:9 clickable film thumbnail. Shows the poster or muted preview when available. */
-export function FilmCard({ film, index, onOpen, decorative = false, size = 'sm' }: Props) {
+export function FilmCard({ film, index, decorative = false, size = 'sm' }: Props) {
+  const onOpen = useOpenFilm()
   const tone = TONES[index % TONES.length]
   return (
     <button

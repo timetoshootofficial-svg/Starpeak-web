@@ -1,4 +1,4 @@
-import { SERVICES } from '../config/services'
+import { SERVICES } from '@/config/services'
 
 export function Services() {
   return (

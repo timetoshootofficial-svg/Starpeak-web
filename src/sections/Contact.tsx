@@ -1,11 +1,14 @@
+'use client'
+
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { getPackage } from '../../shared/config/packages'
-import { PACKAGE_CHOICES, TIMELINE_OPTIONS, validateProjectInquiry, type FieldErrors } from '../../shared/validation'
-import { CONSULTATION } from '../../shared/config/consultation'
-import { ApiError, api } from '../lib/api'
-import { SITE, isPlaceholder } from '../config/site'
-import { Honeypot, SelectField, TextArea, TextField } from '../components/FormControls'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { getPackage } from '@/shared/config/packages'
+import { PACKAGE_CHOICES, TIMELINE_OPTIONS, validateProjectInquiry, type FieldErrors } from '@/shared/validation'
+import { CONSULTATION } from '@/shared/config/consultation'
+import { ApiError, api } from '@/lib/api'
+import { SITE, isPlaceholder } from '@/config/site'
+import { Honeypot, SelectField, TextArea, TextField } from '@/components/FormControls'
 
 const EMPTY = {
   name: '',
@@ -18,7 +21,7 @@ const EMPTY = {
 }
 
 export function Contact() {
-  const [params] = useSearchParams()
+  const params = useSearchParams()
   const [fields, setFields] = useState(EMPTY)
   const [honeypot, setHoneypot] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -28,7 +31,7 @@ export function Contact() {
 
   // Pre-select the package when someone arrives from a pricing card.
   useEffect(() => {
-    const pkg = getPackage(params.get('package') || '')
+    const pkg = getPackage(params?.get('package') || '')
     if (pkg) setFields((f) => ({ ...f, selectedPackage: pkg.name }))
   }, [params])
 
@@ -90,7 +93,7 @@ export function Contact() {
             </div>
             <div className="flex justify-between gap-4 border-b border-espresso/15 py-4">
               <dt className="text-[13px] text-espresso/70">Consultation</dt>
-              <dd className="text-[15px]"><Link to="/#consultation" className="link">Book for ₹{CONSULTATION.feeInr}</Link></dd>
+              <dd className="text-[15px]"><Link href="/#consultation" className="link">Book for ₹{CONSULTATION.feeInr}</Link></dd>
             </div>
           </dl>
         </div>
@@ -130,8 +133,8 @@ export function Contact() {
               />
               <p className="text-[13px] text-espresso/75">
                 This is an enquiry, not a confirmed booking. Scope, terms and payment are agreed with you before production.
-                See our <Link to="/privacy-policy" className="link">Privacy Policy</Link> and{' '}
-                <Link to="/refund-policy" className="link">Refund Policy</Link>.
+                See our <Link href="/privacy-policy" className="link">Privacy Policy</Link> and{' '}
+                <Link href="/refund-policy" className="link">Refund Policy</Link>.
               </p>
               {formError && <p role="alert" className="rounded-[10px] bg-espresso/5 p-3 text-sm font-medium">{formError}</p>}
               <div>

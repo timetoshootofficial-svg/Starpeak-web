@@ -1,21 +1,35 @@
+'use client'
+
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { NAV_LINKS, SITE } from '../config/site'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { NAV_LINKS, SITE } from '@/config/site'
 import { Close, Menu } from './Icons'
 
 export function Header() {
   const [open, setOpen] = useState(false)
-  const location = useLocation()
+  const pathname = usePathname()
 
-  // Close the mobile menu whenever the route or hash changes.
-  useEffect(() => setOpen(false), [location.pathname, location.hash])
+  // Close the mobile menu when the page changes.
+  const [lastPath, setLastPath] = useState(pathname)
+  if (pathname !== lastPath) {
+    setLastPath(pathname)
+    setOpen(false)
+  }
 
+  // …and on hash navigation or Escape.
   useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    const close = () => setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    window.addEventListener('hashchange', close)
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+    return () => {
+      window.removeEventListener('hashchange', close)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [])
+
+  const close = () => setOpen(false)
 
   return (
     <header className="sticky top-0 z-40 border-b border-espresso/10 bg-cream/95 backdrop-blur">
@@ -23,19 +37,20 @@ export function Header() {
         Skip to content
       </a>
       <nav aria-label="Main" className="container-page flex h-20 items-center justify-between gap-6">
-        <Link to="/" className="flex items-center" aria-label={`${SITE.name} home`}>
+        <Link href="/" className="flex items-center" aria-label={`${SITE.name} home`} onClick={close}>
+          {/* Small static logo: a plain <img> keeps it simple and sharp. */}
           <img src="/brand/logo-espresso.png" alt={SITE.name} width={190} height={34} className="h-[30px] w-auto sm:h-[34px]" />
         </Link>
 
         <ul className="hidden items-center gap-9 text-sm lg:flex">
           {NAV_LINKS.map((l) => (
             <li key={l.href}>
-              <Link to={l.href} className="hover:opacity-70">{l.label}</Link>
+              <Link href={l.href} className="hover:opacity-70">{l.label}</Link>
             </li>
           ))}
         </ul>
 
-        <Link to="/#contact" className="btn-dark hidden min-h-11 px-6 text-sm lg:inline-flex">
+        <Link href="/#contact" className="btn-dark hidden min-h-11 px-6 text-sm lg:inline-flex">
           Start a Project
         </Link>
 
@@ -56,13 +71,13 @@ export function Header() {
           <ul className="container-page flex flex-col py-4">
             {NAV_LINKS.map((l) => (
               <li key={l.href}>
-                <Link to={l.href} className="block border-b border-espresso/10 py-4 font-display text-xl font-semibold tracking-tight">
+                <Link href={l.href} onClick={close} className="block border-b border-espresso/10 py-4 font-display text-xl font-semibold tracking-tight">
                   {l.label}
                 </Link>
               </li>
             ))}
             <li className="pt-5">
-              <Link to="/#contact" className="btn-dark w-full">Start a Project</Link>
+              <Link href="/#contact" onClick={close} className="btn-dark w-full">Start a Project</Link>
             </li>
           </ul>
         </div>

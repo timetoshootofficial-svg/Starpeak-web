@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { SITE } from '../config/site'
-import { useDocumentTitle } from '../lib/useDocumentTitle'
+import { SITE } from '@/config/site'
 
 interface Props {
   title: string
@@ -10,7 +9,6 @@ interface Props {
 
 /** Shared frame for the Privacy Policy, Refund Policy and Terms pages. */
 export function LegalLayout({ title, intro, children }: Props) {
-  useDocumentTitle(title)
   return (
     <main id="main" className="container-page py-16 sm:py-24">
       <div className="mx-auto max-w-[760px]">

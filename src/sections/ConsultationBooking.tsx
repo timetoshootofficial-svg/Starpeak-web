@@ -1,13 +1,15 @@
+'use client'
+
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { CONSULTATION } from '../../shared/config/consultation'
-import { bookableDates, formatDateLong, formatDateParts, formatTime12h, openTimesFor } from '../../shared/slots'
-import { validateConsultation, type FieldErrors } from '../../shared/validation'
-import { ApiError, api, type ConsultationConfirmation, type OrderResponse } from '../lib/api'
-import { openCheckout } from '../lib/razorpay'
-import { usePaymentsStatus } from '../lib/usePaymentsStatus'
-import { SITE } from '../config/site'
-import { Honeypot, TextArea, TextField } from '../components/FormControls'
+import Link from 'next/link'
+import { CONSULTATION } from '@/shared/config/consultation'
+import { bookableDates, formatDateLong, formatDateParts, formatTime12h, openTimesFor } from '@/shared/slots'
+import { validateConsultation, type FieldErrors } from '@/shared/validation'
+import { ApiError, api, type ConsultationConfirmation, type OrderResponse } from '@/lib/api'
+import { openCheckout } from '@/lib/razorpay'
+import { usePaymentsStatus } from '@/lib/usePaymentsStatus'
+import { SITE } from '@/config/site'
+import { Honeypot, TextArea, TextField } from '@/components/FormControls'
 
 type Phase =
   | { kind: 'form' }
@@ -19,9 +21,15 @@ const EMPTY = { name: '', email: '', phone: '', brandName: '', brief: '' }
 
 export function ConsultationBooking() {
   const payments = usePaymentsStatus()
-  const dates = useMemo(() => bookableDates(), [])
+  // Dates depend on the visitor's current time, so they are worked out in the browser.
+  const [dates, setDates] = useState<string[]>([])
   const [fields, setFields] = useState(EMPTY)
-  const [date, setDate] = useState(dates[0] ?? '')
+  const [date, setDate] = useState('')
+  useEffect(() => {
+    const list = bookableDates()
+    setDates(list)
+    setDate((d) => d || list[0] || '')
+  }, [])
   const [time, setTime] = useState('')
   const [accepted, setAccepted] = useState(false)
   const [honeypot, setHoneypot] = useState('')
@@ -209,7 +217,7 @@ export function ConsultationBooking() {
           <p className="text-sm font-semibold">Non-refundable</p>
           <p className="text-sm text-espresso/85">
             {CONSULTATION.refundNotice}{' '}
-            <Link to="/refund-policy" className="link">Read the Refund Policy</Link>
+            <Link href="/refund-policy" className="link">Read the Refund Policy</Link>
           </p>
         </div>
 
@@ -223,8 +231,8 @@ export function ConsultationBooking() {
               className="mt-0.5 h-5 w-5 shrink-0 accent-espresso"
             />
             <span>
-              I have read the <Link to="/refund-policy" className="link">Refund Policy</Link>,{' '}
-              <Link to="/terms" className="link">Terms</Link> and <Link to="/privacy-policy" className="link">Privacy Policy</Link>.
+              I have read the <Link href="/refund-policy" className="link">Refund Policy</Link>,{' '}
+              <Link href="/terms" className="link">Terms</Link> and <Link href="/privacy-policy" className="link">Privacy Policy</Link>.
             </span>
           </label>
           {errors.acceptedPolicies && <p className="field-error" role="alert">{errors.acceptedPolicies}</p>}

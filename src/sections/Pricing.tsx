@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
-import { PACKAGES, PRICING_NOTE, formatInr, type FilmPackage } from '../../shared/config/packages'
-import { Check } from '../components/Icons'
+import Link from 'next/link'
+import { PACKAGES, PRICING_NOTE, formatInr, type FilmPackage } from '@/shared/config/packages'
+import { Check } from '@/components/Icons'
 
 function Includes({ items, dark }: { items: string[]; dark?: boolean }) {
   return (
@@ -45,7 +45,7 @@ function PackageCard({ pkg }: { pkg: FilmPackage }) {
       {pkg.note && <p className={`text-xs leading-relaxed ${dark ? 'text-cream/75' : 'text-espresso/75'}`}>{pkg.note}</p>}
 
       <Link
-        to={`/?package=${pkg.id}#contact`}
+        href={`/?package=${pkg.id}#contact`}
         className={`mt-auto w-full ${dark ? 'btn-light' : 'btn-outline'}`}
       >
         {pkg.cta}
@@ -74,7 +74,7 @@ export function Pricing() {
 
         <p className="max-w-[760px] text-sm text-espresso/75">
           {PRICING_NOTE} All prices in Indian Rupees. Please read our{' '}
-          <Link to="/refund-policy" className="link">Refund Policy</Link> before making a payment.
+          <Link href="/refund-policy" className="link">Refund Policy</Link> before making a payment.
         </p>
       </div>
     </section>

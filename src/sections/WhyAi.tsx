@@ -1,4 +1,4 @@
-import { WHY_AI } from '../config/services'
+import { WHY_AI } from '@/config/services'
 
 export function WhyAi() {
   return (

@@ -1,11 +1,11 @@
 import { createHmac } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { GET as status } from '../api/status.js'
-import { POST as createOrder } from '../api/consultation/create-order.js'
-import { POST as verify } from '../api/consultation/verify.js'
-import { POST as projectVerify } from '../api/project/verify.js'
-import { POST as webhook } from '../api/razorpay/webhook.js'
-import { POST as inquiry } from '../api/project/inquiry.js'
+import { GET as status } from '@/app/api/status/route'
+import { POST as createOrder } from '@/app/api/consultation/create-order/route'
+import { POST as verify } from '@/app/api/consultation/verify/route'
+import { POST as projectVerify } from '@/app/api/project/verify/route'
+import { POST as webhook } from '@/app/api/razorpay/webhook/route'
+import { POST as inquiry } from '@/app/api/project/inquiry/route'
 
 const KEYS = [
   'SUPABASE_URL',

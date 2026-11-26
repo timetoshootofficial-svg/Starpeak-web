@@ -1,7 +1,7 @@
-import { SELECTED_WORK, type Film } from '../config/portfolio'
-import { FilmCard } from '../components/FilmCard'
+import { SELECTED_WORK } from '@/config/portfolio'
+import { FilmCard } from '@/components/FilmCard'
 
-export function SelectedWork({ onOpenFilm }: { onOpenFilm: (film: Film) => void }) {
+export function SelectedWork() {
   const [featured, ...rest] = SELECTED_WORK
   const hasPlaceholders = SELECTED_WORK.some((f) => f.placeholder)
   return (
@@ -20,7 +20,7 @@ export function SelectedWork({ onOpenFilm }: { onOpenFilm: (film: Film) => void 
         {featured && (
           <article className="flex flex-col gap-5">
             <div className="[&>button]:aspect-[21/9]">
-              <FilmCard film={featured} index={0} onOpen={onOpenFilm} size="lg" />
+              <FilmCard film={featured} index={0} size="lg" />
             </div>
             <div className="flex flex-wrap justify-between gap-x-10 gap-y-3">
               <div>
@@ -35,7 +35,7 @@ export function SelectedWork({ onOpenFilm }: { onOpenFilm: (film: Film) => void 
         <div className="grid gap-10 md:grid-cols-2">
           {rest.map((film, i) => (
             <article key={film.id} className="flex flex-col gap-4">
-              <FilmCard film={film} index={i + 1} onOpen={onOpenFilm} size="lg" />
+              <FilmCard film={film} index={i + 1} size="lg" />
               <div>
                 <p className="mb-1.5 text-xs uppercase tracking-[0.18em] text-cream/70">{film.category}</p>
                 <h3 className="mb-2 font-display text-[22px] font-semibold leading-tight tracking-[-0.03em]">{film.title}</h3>

@@ -1,5 +1,7 @@
+'use client'
+
 import { useEffect, useRef } from 'react'
-import type { Film } from '../config/portfolio'
+import type { Film } from '@/config/portfolio'
 import { Close, Play } from './Icons'
 
 interface Props {

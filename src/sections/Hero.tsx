@@ -1,12 +1,12 @@
-import { Link } from 'react-router-dom'
-import { HERO_FILMS, type Film } from '../config/portfolio'
-import { PROCESS } from '../config/services'
-import { SITE } from '../config/site'
-import { CONSULTATION } from '../../shared/config/consultation'
-import { FilmCard } from '../components/FilmCard'
-import { ArrowRight, Star } from '../components/Icons'
+import Link from 'next/link'
+import { HERO_FILMS } from '@/config/portfolio'
+import { PROCESS } from '@/config/services'
+import { SITE } from '@/config/site'
+import { CONSULTATION } from '@/shared/config/consultation'
+import { FilmCard } from '@/components/FilmCard'
+import { ArrowRight, Star } from '@/components/Icons'
 
-export function Hero({ onOpenFilm }: { onOpenFilm: (film: Film) => void }) {
+export function Hero() {
   return (
     <section id="top" aria-labelledby="hero-title" className="px-2 pt-3 sm:px-3 lg:px-4">
       <div className="overflow-hidden rounded-[24px] bg-espresso text-cream sm:rounded-[32px]">
@@ -23,16 +23,16 @@ export function Hero({ onOpenFilm }: { onOpenFilm: (film: Film) => void }) {
               Powerful brand stories, brought to life as cinematic AI films — in less time, within a smaller budget.
             </p>
             <div className="flex flex-wrap items-center gap-x-7 gap-y-4 pt-2">
-              <Link to="/#contact" className="btn-light min-h-16 px-9 text-[17px] font-semibold">
+              <Link href="/#contact" className="btn-light min-h-16 px-9 text-[17px] font-semibold">
                 Start a Project <ArrowRight />
               </Link>
-              <Link to="/#work" className="inline-flex min-h-11 items-center border-b border-cream/60 font-medium hover:opacity-80">
+              <Link href="/#work" className="inline-flex min-h-11 items-center border-b border-cream/60 font-medium hover:opacity-80">
                 Explore Our Work
               </Link>
             </div>
             <p className="-mt-2 text-sm text-cream/75">
               Not sure yet?{' '}
-              <Link to="/#consultation" className="font-medium text-cream underline-offset-4 hover:underline">
+              <Link href="/#consultation" className="font-medium text-cream underline-offset-4 hover:underline">
                 Book a ₹{CONSULTATION.feeInr} consultation →
               </Link>
             </p>
@@ -59,7 +59,6 @@ export function Hero({ onOpenFilm }: { onOpenFilm: (film: Film) => void }) {
                     key={`${film.id}-${i}`}
                     film={film}
                     index={i}
-                    onOpen={onOpenFilm}
                     decorative={i >= HERO_FILMS.length}
                   />
                 ))}

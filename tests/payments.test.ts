@@ -6,9 +6,9 @@ import {
   verifyPaymentSignature,
   verifyWebhookSignature,
   type RazorpayPayment,
-} from '../api/_lib/razorpay.js'
-import { amountDueInr, type ProjectBookingRow } from '../api/_lib/project.js'
-import { CONSULTATION_FEE_PAISE } from '../api/_lib/consultation.js'
+} from '@/lib/server/razorpay'
+import { amountDueInr, type ProjectBookingRow } from '@/lib/server/project'
+import { CONSULTATION_FEE_PAISE } from '@/lib/server/consultation'
 
 const SECRET = 'test_secret'
 

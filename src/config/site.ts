@@ -8,8 +8,8 @@ export const SITE = {
   tagline: 'AI Advertising Film Studio',
   description:
     'STARPEAK Media is an AI advertising film studio. We turn brand stories into cinematic AI ad films, in less time and within a smaller budget.',
-  /** Public URL of the site, e.g. https://www.starpeakmedia.in (set VITE_SITE_URL in Vercel). */
-  url: import.meta.env.VITE_SITE_URL || 'https://www.example.com',
+  /** Public URL of the site, e.g. https://www.starpeakmedia.in (set NEXT_PUBLIC_SITE_URL in Vercel). */
+  url: (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.example.com').replace(/\/$/, ''),
   year: new Date().getFullYear(),
 
   contact: {

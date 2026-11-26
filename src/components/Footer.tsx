@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { LEGAL_LINKS, SITE } from '../config/site'
+import Link from 'next/link'
+import { LEGAL_LINKS, SITE } from '@/config/site'
 
 const FOOTER_NAV = [
   { label: 'Work', href: '/#work' },
@@ -20,12 +20,12 @@ export function Footer() {
           <nav aria-label="Footer" className="flex flex-wrap gap-x-18 gap-y-10 text-sm">
             <ul className="flex flex-col gap-3">
               {FOOTER_NAV.map((l) => (
-                <li key={l.href}><Link to={l.href} className="hover:opacity-70">{l.label}</Link></li>
+                <li key={l.href}><Link href={l.href} className="hover:opacity-70">{l.label}</Link></li>
               ))}
             </ul>
             <ul className="flex flex-col gap-3">
               {LEGAL_LINKS.map((l) => (
-                <li key={l.href}><Link to={l.href} className="hover:opacity-70">{l.label}</Link></li>
+                <li key={l.href}><Link href={l.href} className="hover:opacity-70">{l.label}</Link></li>
               ))}
             </ul>
           </nav>
