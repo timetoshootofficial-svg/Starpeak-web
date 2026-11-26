@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { PACKAGES, PRICING_NOTE, formatInr, type FilmPackage } from '@/shared/config/packages'
+import { ADVANCE_PERCENT, PAYMENT_TERMS } from '@/shared/config/payment-terms'
 import { Check } from '@/components/Icons'
 
 function Includes({ items, dark }: { items: string[]; dark?: boolean }) {
@@ -72,10 +73,15 @@ export function Pricing() {
           ))}
         </div>
 
-        <p className="max-w-[760px] text-sm text-espresso/75">
-          {PRICING_NOTE} All prices in Indian Rupees. Please read our{' '}
-          <Link href="/refund-policy" className="link">Refund Policy</Link> before making a payment.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-10">
+          <p className="shrink-0 rounded-full border border-espresso/20 px-4 py-2 text-sm font-medium">
+            {ADVANCE_PERCENT}% advance to start · {100 - ADVANCE_PERCENT}% after final delivery
+          </p>
+          <p className="max-w-[760px] text-sm text-espresso/75">
+            {PRICING_NOTE} All prices in Indian Rupees. {PAYMENT_TERMS.advanceRefund} Please read our{' '}
+            <Link href="/refund-policy" className="link">Refund Policy</Link> before making a payment.
+          </p>
+        </div>
       </div>
     </section>
   )

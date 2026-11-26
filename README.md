@@ -100,24 +100,41 @@ Create a [Resend](https://resend.com) account, verify your domain, then set `RES
 Each paid booking appears in `consultation_bookings` with `status = confirmed`. A booking with `status = needs_attention` was paid, but its slot was taken while payment was processing. Contact that person to reschedule.
 
 ### Project inquiry → paid project
+
+**Payment terms:** 50% advance to start, 50% balance after final delivery (set in `src/shared/config/payment-terms.ts`). The advance is fully refundable if the client cancels before work starts; once work starts it is non-refundable. The balance is non-refundable once paid.
+
 1. A new inquiry lands in `project_inquiries`. This is not a booking.
-2. Discuss the brief and agree on scope, deliverables, timeline and payment terms **in writing**.
+2. Discuss the brief and agree on scope, deliverables and timeline **in writing**.
 3. Create the project booking in **SQL Editor**:
 
 ```sql
-insert into project_bookings (client_name, company_name, email, phone, package_name, package_price, project_scope, amount_due)
+insert into project_bookings (client_name, company_name, email, phone, package_name, package_price, project_scope)
 values (
   'Client Name', 'Brand Pvt Ltd', 'client@brand.com', '+919876543210',
   'Brand Story Film', 35000,
-  'One brand film up to 5 minutes. Business visit on 2 Dec. Delivery by 20 Dec. Two revision rounds.',
-  null              -- or an agreed advance in rupees, e.g. 15000
+  'One brand film up to 5 minutes. Business visit on 2 Dec. Delivery by 20 Dec. Two revision rounds.'
 )
 returning project_reference;
 ```
 
-4. Send the client `https://your-domain/pay/<project_reference>`. They review the scope, accept the terms, and pay. The booking moves to `confirmed` / `paid` automatically.
+4. Send the client `https://your-domain/pay/<project_reference>`. They review the scope, accept the terms, and pay the **50% advance**. The booking moves to `in_production` automatically.
+5. When work begins, record it (this is the point after which the advance is non-refundable):
 
-`package_name` and `package_price` must match `src/shared/config/packages.ts`, otherwise the payment page refuses the booking.
+```sql
+update project_bookings set work_started_at = now() where project_reference = 'SPP-XXXXXXXXXX';
+```
+
+6. After **final delivery**, open the balance on the same link:
+
+```sql
+update project_bookings set status = 'awaiting_balance' where project_reference = 'SPP-XXXXXXXXXX';
+```
+
+   The client pays the balance from the same link, and the booking moves to `completed`.
+
+7. If a client cancels **before work starts**, refund the advance in the Razorpay Dashboard (Payments → the payment → Refund), then run `update project_bookings set status = 'refunded' where project_reference = '…';`.
+
+Every payment (advance or balance) is recorded in `project_payments`. `package_name` and `package_price` must match `src/shared/config/packages.ts`, otherwise the payment page refuses the booking.
 
 ---
 

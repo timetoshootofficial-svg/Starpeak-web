@@ -3,6 +3,7 @@ import { LegalLayout } from '@/components/LegalLayout'
 import { SITE } from '@/config/site'
 import { CONSULTATION } from '@/shared/config/consultation'
 import { formatInr } from '@/shared/config/packages'
+import { ADVANCE_PERCENT, PAYMENT_TERMS } from '@/shared/config/payment-terms'
 
 export function RefundPolicy() {
   return (
@@ -10,10 +11,17 @@ export function RefundPolicy() {
       title="Refund Policy"
       intro="Please read this policy before you book a consultation or make a project payment."
     >
-      <h2>1. Our policy</h2>
+      <h2>1. Our policy at a glance</h2>
+      <ul>
+        <li><strong>Consultation fee:</strong> non-refundable once payment is completed.</li>
+        <li>
+          <strong>Project advance ({ADVANCE_PERCENT}%):</strong> fully refundable if you cancel before
+          work starts; non-refundable once work has started.
+        </li>
+        <li><strong>Project balance:</strong> paid after final delivery and non-refundable once paid.</li>
+      </ul>
       <p>
-        All consultation fees and project payments are non-refundable once payment has been
-        completed, subject to applicable law and any specific written agreement between {SITE.name}{' '}
+        All of this is subject to applicable law and any specific written agreement between {SITE.name}{' '}
         and the client.
       </p>
       <p>
@@ -41,9 +49,26 @@ export function RefundPolicy() {
         writing, and then send you a private Razorpay payment link.
       </p>
       <p>
-        Project payments are non-refundable once the booking is confirmed or production work has
-        commenced, except where a refund is required by applicable law or expressly agreed in
-        writing. This also applies to any advance payment agreed in writing.
+        <strong>{PAYMENT_TERMS.summary}</strong>
+      </p>
+      <h3>The {ADVANCE_PERCENT}% advance</h3>
+      <ul>
+        <li>{PAYMENT_TERMS.workStarts}</li>
+        <li>
+          <strong>Before work starts:</strong> if you cancel, we will refund the advance in full. Ask
+          us in writing (by email) and quote your project reference. Refunds go back to the original
+          payment method through Razorpay, usually within [number] working days of approval; your bank
+          may take a few more days to show it.
+        </li>
+        <li>
+          <strong>Once work has started:</strong> the advance is non-refundable, except where a refund
+          is required by applicable law or expressly agreed in writing.
+        </li>
+      </ul>
+      <h3>The balance</h3>
+      <p>
+        {PAYMENT_TERMS.balanceRefund} Please review the delivered film and use your included revision
+        rounds before the final delivery is completed.
       </p>
 
       <h2>4. Failed or duplicate payments</h2>

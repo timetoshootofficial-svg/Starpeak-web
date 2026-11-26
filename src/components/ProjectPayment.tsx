@@ -4,10 +4,13 @@ import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { formatInr } from '@/shared/config/packages'
+import { ADVANCE_PERCENT, PAYMENT_TERMS } from '@/shared/config/payment-terms'
 import { REFERENCE_RE } from '@/shared/validation'
 import { ApiError, api, type OrderResponse } from '@/lib/api'
 import { openCheckout } from '@/lib/razorpay'
 import { SITE } from '@/config/site'
+
+type Stage = 'advance' | 'balance'
 
 interface ProjectBooking {
   reference: string
@@ -15,11 +18,13 @@ interface ProjectBooking {
   companyName: string
   packageName: string
   packagePriceInr: number
-  amountDueInr: number
-  isAdvance: boolean
+  advanceInr: number
+  balanceInr: number
+  advancePaid: boolean
+  balancePaid: boolean
+  due: { stage: Stage; amountInr: number } | null
   projectScope: string
-  status: string
-  paymentStatus: string
+  status: 'awaiting_advance' | 'in_production' | 'awaiting_balance' | 'completed' | 'cancelled' | 'refunded'
 }
 
 type View =
@@ -27,12 +32,21 @@ type View =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; booking: ProjectBooking; notice?: string }
   | { kind: 'working'; booking: ProjectBooking; label: string }
-  | { kind: 'paid'; booking: ProjectBooking }
+  | { kind: 'justPaid'; booking: ProjectBooking; stage: Stage }
+
+const STATUS_TEXT: Record<ProjectBooking['status'], string> = {
+  awaiting_advance: 'Waiting for the advance payment',
+  in_production: 'Advance received — your project is in progress',
+  awaiting_balance: 'Final delivery done — balance payment due',
+  completed: 'Fully paid — thank you',
+  cancelled: 'This project has been cancelled',
+  refunded: 'This project has been refunded',
+}
 
 /**
  * Private payment page for an approved project: /pay/SPP-XXXXXXXXXX.
- * The studio creates the booking (with the agreed scope) in Supabase and
- * sends this link to the client. Amounts come from the server only.
+ * Step 1: the client pays the 50% advance. Step 2: after final delivery,
+ * the studio marks the balance as due and the client pays it from the same link.
  */
 export function ProjectPayment() {
   const params = useParams<{ reference: string }>()
@@ -48,25 +62,29 @@ export function ProjectPayment() {
     }
     api
       .get<ProjectBooking>(`/api/project/booking?reference=${encodeURIComponent(reference)}`)
-      .then((booking) =>
-        setView(booking.paymentStatus === 'paid' ? { kind: 'paid', booking } : { kind: 'ready', booking }),
-      )
+      .then((booking) => setView({ kind: 'ready', booking }))
       .catch((err) =>
         setView({
           kind: 'error',
-          message: err instanceof ApiError && err.status === 404
-            ? 'We could not find this project. Please check the link we sent you.'
-            : err instanceof ApiError ? err.message : 'Could not load this project. Please try again.',
+          message:
+            err instanceof ApiError && err.status === 404
+              ? 'We could not find this project. Please check the link we sent you.'
+              : err instanceof ApiError
+                ? err.message
+                : 'Could not load this project. Please try again.',
         }),
       )
   }, [reference])
 
   async function pay(booking: ProjectBooking) {
+    if (!booking.due) return
     if (!accepted) {
-      setAcceptError('Please confirm you have read and agree to the scope and policies.')
+      setAcceptError('Please confirm you agree to the scope, terms and refund policy.')
       return
     }
     setAcceptError('')
+    const stage = booking.due.stage
+    const label = stage === 'advance' ? `${ADVANCE_PERCENT}% advance` : 'balance'
     try {
       setView({ kind: 'working', booking, label: 'Opening secure payment…' })
       const order = await api.post<OrderResponse>('/api/project/create-order', { reference: booking.reference, acceptedTerms: true })
@@ -74,9 +92,9 @@ export function ProjectPayment() {
         keyId: order.keyId,
         orderId: order.orderId,
         amountPaise: order.amountPaise,
-        description: `${booking.packageName} · ${booking.reference}`,
+        description: `${booking.packageName} · ${label} · ${booking.reference}`,
         prefill: { name: booking.clientName },
-        notes: { project_reference: booking.reference },
+        notes: { project_reference: booking.reference, stage },
       })
       if (outcome.kind === 'dismissed') {
         setView({ kind: 'ready', booking, notice: 'Payment was not completed. You can try again whenever you are ready.' })
@@ -88,7 +106,8 @@ export function ProjectPayment() {
       }
       setView({ kind: 'working', booking, label: 'Confirming your payment…' })
       await api.post('/api/project/verify', outcome.response)
-      setView({ kind: 'paid', booking })
+      const fresh = await api.get<ProjectBooking>(`/api/project/booking?reference=${encodeURIComponent(booking.reference)}`)
+      setView({ kind: 'justPaid', booking: fresh, stage })
     } catch (err) {
       setView({
         kind: 'ready',
@@ -98,13 +117,22 @@ export function ProjectPayment() {
     }
   }
 
+  const booking = view.kind === 'loading' || view.kind === 'error' ? null : view.booking
+  const stage = booking?.due?.stage
+
   return (
     <main id="main" className="container-page py-16 sm:py-24">
       <div className="mx-auto flex max-w-[640px] flex-col gap-8">
         <div className="flex flex-col gap-3">
           <p className="eyebrow text-espresso/70">Project Payment</p>
           <h1 className="font-display text-[clamp(32px,4vw,46px)] font-semibold leading-[1.08] tracking-[-0.03em]">
-            {view.kind === 'paid' ? 'Payment received. Thank you.' : 'Confirm your project'}
+            {view.kind === 'justPaid'
+              ? 'Payment received. Thank you.'
+              : stage === 'balance'
+                ? 'Pay the balance'
+                : stage === 'advance'
+                  ? 'Confirm your project'
+                  : 'Your project'}
           </h1>
         </div>
 
@@ -117,35 +145,42 @@ export function ProjectPayment() {
           </div>
         )}
 
-        {view.kind !== 'loading' && view.kind !== 'error' && (
+        {booking && (
           <>
             <dl className="divide-y divide-espresso/15 rounded-2xl border border-espresso/15">
-              <Row label="Reference" value={<span className="font-mono">{view.booking.reference}</span>} />
-              <Row label="Client" value={`${view.booking.clientName}, ${view.booking.companyName}`} />
-              <Row label="Package" value={`${view.booking.packageName} (${formatInr(view.booking.packagePriceInr)})`} />
+              <Row label="Reference" value={<span className="font-mono">{booking.reference}</span>} />
+              <Row label="Client" value={`${booking.clientName}, ${booking.companyName}`} />
+              <Row label="Package" value={`${booking.packageName} · ${formatInr(booking.packagePriceInr)}`} />
               <Row
-                label={view.booking.isAdvance ? 'Agreed advance payment' : 'Amount to pay'}
-                value={<strong className="font-display text-2xl">{formatInr(view.booking.amountDueInr)}</strong>}
+                label={`Advance (${ADVANCE_PERCENT}%) — to start`}
+                value={<>{formatInr(booking.advanceInr)} <Badge paid={booking.advancePaid} /></>}
               />
+              <Row
+                label={`Balance (${100 - ADVANCE_PERCENT}%) — after final delivery`}
+                value={<>{formatInr(booking.balanceInr)} <Badge paid={booking.balancePaid} /></>}
+              />
+              <Row label="Status" value={STATUS_TEXT[booking.status]} />
               <div className="flex flex-col gap-2 p-5">
                 <dt className="text-xs text-espresso/70">Agreed project scope</dt>
-                <dd className="whitespace-pre-line text-[15px]">{view.booking.projectScope}</dd>
+                <dd className="whitespace-pre-line text-[15px]">{booking.projectScope}</dd>
               </div>
             </dl>
 
-            {view.kind === 'paid' ? (
+            {view.kind === 'justPaid' && (
               <p role="status" className="rounded-2xl bg-espresso p-6 text-cream">
-                Your payment for {view.booking.reference} has been received and verified. Your project is confirmed, and
-                we'll be in touch about the next steps.
+                {view.stage === 'advance'
+                  ? `Your ${ADVANCE_PERCENT}% advance has been received and verified. Your project is confirmed, and we'll be in touch to begin work.`
+                  : 'Your balance payment has been received and verified. Your project is now fully paid. Thank you!'}
               </p>
-            ) : (
+            )}
+
+            {view.kind !== 'justPaid' && booking.due && (
               <div className="flex flex-col gap-5">
                 <div role="note" className="flex flex-col gap-1.5 rounded-[10px] border border-espresso/25 p-4 text-sm">
                   <p className="font-semibold">Before you pay</p>
                   <p className="text-espresso/85">
-                    Project payments are non-refundable once the booking is confirmed or production work has commenced,
-                    except where a refund is required by applicable law or expressly agreed in writing. Please review the
-                    scope above carefully. <Link href="/refund-policy" className="link">Read the Refund Policy</Link>
+                    {booking.due.stage === 'advance' ? PAYMENT_TERMS.beforeAdvance : PAYMENT_TERMS.beforeBalance}{' '}
+                    <Link href="/refund-policy" className="link">Read the Refund Policy</Link>
                   </p>
                 </div>
                 <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -157,8 +192,8 @@ export function ProjectPayment() {
                     className="mt-0.5 h-5 w-5 shrink-0 accent-espresso"
                   />
                   <span>
-                    I agree to the project scope above, the <Link href="/terms" className="link">Terms &amp; Conditions</Link> and
-                    the <Link href="/refund-policy" className="link">Refund Policy</Link>.
+                    I agree to the project scope above, the <Link href="/terms" className="link">Terms &amp; Conditions</Link>{' '}
+                    and the <Link href="/refund-policy" className="link">Refund Policy</Link>.
                   </span>
                 </label>
                 {acceptError && <p className="field-error" role="alert">{acceptError}</p>}
@@ -169,18 +204,34 @@ export function ProjectPayment() {
                   type="button"
                   className="btn-dark min-h-14 text-base"
                   disabled={view.kind === 'working'}
-                  onClick={() => pay(view.booking)}
+                  onClick={() => pay(booking)}
                 >
-                  {view.kind === 'working' ? view.label : `Pay ${formatInr(view.booking.amountDueInr)} securely`}
+                  {view.kind === 'working'
+                    ? view.label
+                    : `Pay ${booking.due.stage === 'advance' ? `${ADVANCE_PERCENT}% advance` : 'balance'} — ${formatInr(booking.due.amountInr)}`}
                 </button>
                 <p className="text-center text-xs text-espresso/70">Payments are processed by Razorpay. Prices in INR.</p>
               </div>
+            )}
+
+            {view.kind !== 'justPaid' && !booking.due && (
+              <p className="rounded-2xl border border-espresso/15 p-5 text-sm text-espresso/85">
+                There is nothing to pay right now.
+                {booking.status === 'in_production' &&
+                  ' The balance will be requested on this same link after final delivery.'}
+              </p>
             )}
           </>
         )}
       </div>
     </main>
   )
+}
+
+function Badge({ paid }: { paid: boolean }) {
+  return paid ? (
+    <span className="ml-2 rounded-full bg-espresso px-2 py-0.5 text-xs text-cream">Paid</span>
+  ) : null
 }
 
 function Row({ label, value }: { label: string; value: ReactNode }) {

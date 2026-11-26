@@ -7,7 +7,8 @@ import {
   verifyWebhookSignature,
   type RazorpayPayment,
 } from '@/lib/server/razorpay'
-import { amountDueInr, type ProjectBookingRow } from '@/lib/server/project'
+import { paymentPlan, type ProjectBookingRow } from '@/lib/server/project'
+import { splitPayment } from '@/shared/config/payment-terms'
 import { CONSULTATION_FEE_PAISE } from '@/lib/server/consultation'
 
 const SECRET = 'test_secret'
@@ -56,7 +57,7 @@ describe('payment status checks', () => {
   })
 })
 
-describe('project amount due', () => {
+describe('project payment plan (50% advance, balance after delivery)', () => {
   const row = (over: Partial<ProjectBookingRow>): ProjectBookingRow => ({
     id: '1',
     project_reference: 'SPP-ABCDEFGHJK',
@@ -66,24 +67,39 @@ describe('project amount due', () => {
     phone: '+919999999999',
     package_name: 'Brand Story Film',
     package_price: 35000,
-    amount_due: null,
     project_scope: 'Scope',
-    payment_status: 'unpaid',
-    status: 'awaiting_payment',
-    razorpay_order_id: null,
-    razorpay_payment_id: null,
-    order_amount_paise: null,
+    status: 'awaiting_advance',
+    advance_paid_at: null,
+    balance_paid_at: null,
     ...over,
   })
-  it('uses the full package price when no advance is set', () => {
-    expect(amountDueInr(row({}))).toEqual({ amount: 35000, isAdvance: false })
+  it('splits every package price into two halves that add up', () => {
+    expect(splitPayment(20000)).toEqual({ advance: 10000, balance: 10000 })
+    expect(splitPayment(35000)).toEqual({ advance: 17500, balance: 17500 })
+    expect(splitPayment(49000)).toEqual({ advance: 24500, balance: 24500 })
   })
-  it('uses an agreed advance only when the studio set one', () => {
-    expect(amountDueInr(row({ amount_due: 10000 }))).toEqual({ amount: 10000, isAdvance: true })
+  it('asks for the advance first', () => {
+    expect(paymentPlan(row({}))?.due).toEqual({ stage: 'advance', amountInr: 17500 })
+  })
+  it('asks for nothing while the project is in production', () => {
+    expect(paymentPlan(row({ status: 'in_production', advance_paid_at: '2026-11-26' }))?.due).toBeNull()
+  })
+  it('asks for the balance only after the studio marks final delivery', () => {
+    expect(paymentPlan(row({ status: 'awaiting_balance', advance_paid_at: '2026-11-26' }))?.due).toEqual({
+      stage: 'balance',
+      amountInr: 17500,
+    })
+    // Balance can never be requested if the advance was never paid.
+    expect(paymentPlan(row({ status: 'awaiting_balance' }))?.due).toBeNull()
+  })
+  it('asks for nothing once fully paid, cancelled or refunded', () => {
+    const paid = { advance_paid_at: '2026-11-26', balance_paid_at: '2026-12-20' }
+    expect(paymentPlan(row({ status: 'completed', ...paid }))?.due).toBeNull()
+    expect(paymentPlan(row({ status: 'cancelled' }))?.due).toBeNull()
+    expect(paymentPlan(row({ status: 'refunded' }))?.due).toBeNull()
   })
   it('refuses prices that do not match the packages config', () => {
-    expect(amountDueInr(row({ package_price: 30000 }))).toBeNull()
-    expect(amountDueInr(row({ package_name: 'Made Up' }))).toBeNull()
-    expect(amountDueInr(row({ amount_due: 99999 }))).toBeNull()
+    expect(paymentPlan(row({ package_price: 30000 }))).toBeNull()
+    expect(paymentPlan(row({ package_name: 'Made Up' }))).toBeNull()
   })
 })

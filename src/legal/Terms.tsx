@@ -4,6 +4,7 @@ import { SITE } from '@/config/site'
 import { CONSULTATION } from '@/shared/config/consultation'
 import { PACKAGES, formatInr } from '@/shared/config/packages'
 import type { FilmPackage } from '@/shared/config/packages'
+import { ADVANCE_PERCENT, PAYMENT_TERMS } from '@/shared/config/payment-terms'
 
 /** The package's revision line (e.g. "Two revision rounds"), read from its deliverables. */
 function revisionLine(pkg: FilmPackage): string | undefined {
@@ -71,7 +72,7 @@ export function Terms() {
         </strong>{' '}
         After we discuss your brief, we will share the agreed scope, deliverables, timeline and
         payment terms in writing (for example, by email). A project is confirmed only when you have
-        accepted those terms and the agreed payment has been received.
+        accepted those terms and the {ADVANCE_PERCENT}% advance has been received.
       </p>
 
       <h2>6. Payment terms</h2>
@@ -82,9 +83,10 @@ export function Terms() {
           link we send you.
         </li>
         <li>
-          Projects are paid in full before production begins, unless an advance payment and a
-          schedule for the balance have been agreed in writing.
+          <strong>{PAYMENT_TERMS.summary}</strong> Both payments are made through the private payment
+          link we send you for your project.
         </li>
+        <li>{PAYMENT_TERMS.workStarts}</li>
         <li>
           Payment amounts are checked on our server against the agreed price. A payment counts only
           once it has been successfully completed and verified.
@@ -92,10 +94,14 @@ export function Terms() {
         <li>[Applicable taxes, if any, will be shown on the invoice.]</li>
       </ul>
 
-      <h2>7. Non-refundable payments</h2>
+      <h2>7. Refunds</h2>
+      <ul>
+        <li>Consultation fees are non-refundable once payment has been completed.</li>
+        <li>{PAYMENT_TERMS.advanceRefund}</li>
+        <li>{PAYMENT_TERMS.balanceRefund}</li>
+      </ul>
       <p>
-        Consultation fees and project payments are non-refundable once payment has been completed,
-        subject to applicable law and any specific written agreement. Please read our{' '}
+        All of this is subject to applicable law and any specific written agreement. Please read our{' '}
         <Link href="/refund-policy">Refund Policy</Link> for full details, including how we handle
         failed or duplicate payments.
       </p>
@@ -163,8 +169,9 @@ export function Terms() {
 
       <h2>13. Project cancellation</h2>
       <p>
-        If you wish to cancel a confirmed project, please tell us in writing as soon as possible.
-        Payments already made are handled under our <Link href="/refund-policy">Refund Policy</Link>.
+        If you wish to cancel a confirmed project, please tell us in writing as soon as possible. If
+        work has not yet started, we will refund your advance in full. Once work has started, the
+        advance is non-refundable. See our <Link href="/refund-policy">Refund Policy</Link>.
         If you do not respond to our requests for materials or feedback for [number] days, we may
         treat the project as paused or closed. We may cancel a project if the brief requires
         content that is unlawful, misleading or harmful.

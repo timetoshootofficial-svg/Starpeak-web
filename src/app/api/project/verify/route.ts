@@ -19,9 +19,9 @@ export const POST = handle(async (request) => {
   }
 
   try {
-    const row = await confirmProjectPayment(orderId, paymentId)
-    if (!row) return error('Project not found for this payment.', 404)
-    return json({ reference: row.project_reference, status: row.status, paymentStatus: row.payment_status })
+    const result = await confirmProjectPayment(orderId, paymentId)
+    if (!result) return error('Project not found for this payment.', 404)
+    return json({ reference: result.booking.project_reference, status: result.booking.status, stage: result.stage })
   } catch (err) {
     if (err instanceof PaymentNotVerified) {
       return error('Your payment has not been confirmed by the bank yet. Please wait a moment and refresh, or contact us.', 402)

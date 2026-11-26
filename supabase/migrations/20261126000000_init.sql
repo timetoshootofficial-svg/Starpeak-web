@@ -102,6 +102,13 @@ create index if not exists consultation_bookings_date_idx on public.consultation
 
 -- ---------------------------------------------------------------------------
 -- Project bookings (created by the studio after scope is agreed in writing)
+--
+-- Payment terms: 50% advance to start, 50% balance after final delivery.
+-- Status flow:
+--   awaiting_advance → (advance paid) in_production
+--   in_production    → (studio, after final delivery) awaiting_balance
+--   awaiting_balance → (balance paid) completed
+--   cancelled / refunded are set by the studio.
 -- ---------------------------------------------------------------------------
 create table if not exists public.project_bookings (
   id                  uuid primary key default gen_random_uuid(),
@@ -112,24 +119,42 @@ create table if not exists public.project_bookings (
   email               text not null check (email ~* '^[^\s@]+@[^\s@]+\.[^\s@]{2,}$'),
   phone               text not null check (phone ~ '^\+?[0-9]{10,15}$'),
   package_name        text not null,
-  -- Whole rupees. Must match shared/config/packages.ts — update both together.
+  -- Whole rupees. Must match src/shared/config/packages.ts — update both together.
   package_price       integer not null check (package_price in (20000, 35000, 49000)),
-  -- Optional agreed advance in whole rupees. NULL = full package price.
-  amount_due          integer check (amount_due is null or (amount_due > 0 and amount_due <= package_price)),
   project_scope       text not null check (char_length(project_scope) between 10 and 5000),
-  payment_status      text not null default 'unpaid'
-                        check (payment_status in ('unpaid', 'order_created', 'paid', 'failed', 'refunded')),
-  status              text not null default 'awaiting_payment'
-                        check (status in ('awaiting_payment', 'confirmed', 'in_production', 'completed', 'cancelled')),
-  razorpay_order_id   text unique,
-  razorpay_payment_id text unique,
-  order_amount_paise  integer check (order_amount_paise is null or order_amount_paise > 0),
+  status              text not null default 'awaiting_advance'
+                        check (status in ('awaiting_advance', 'in_production', 'awaiting_balance', 'completed', 'cancelled', 'refunded')),
   terms_accepted_at   timestamptz,
-  paid_at             timestamptz,
+  advance_paid_at     timestamptz,
+  -- Set by the studio when work begins (brand discovery, scripting, a visit or production).
+  -- Before this, the advance is fully refundable on request; after it, non-refundable.
+  work_started_at     timestamptz,
+  balance_paid_at     timestamptz,
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
-  constraint project_confirmed_is_paid check (status not in ('confirmed', 'in_production', 'completed') or payment_status = 'paid')
+  constraint project_started_needs_advance check (
+    status not in ('in_production', 'awaiting_balance', 'completed') or advance_paid_at is not null),
+  constraint project_completed_needs_balance check (status <> 'completed' or balance_paid_at is not null)
 );
+
+-- One row per Razorpay order for a project (advance or balance).
+create table if not exists public.project_payments (
+  id                  uuid primary key default gen_random_uuid(),
+  booking_id          uuid not null references public.project_bookings (id) on delete restrict,
+  stage               text not null check (stage in ('advance', 'balance')),
+  amount_paise        integer not null check (amount_paise > 0),
+  razorpay_order_id   text not null unique,
+  razorpay_payment_id text unique,
+  status              text not null default 'created' check (status in ('created', 'paid', 'failed', 'refunded')),
+  paid_at             timestamptz,
+  created_at          timestamptz not null default now(),
+  constraint project_payment_paid_has_id check (status <> 'paid' or razorpay_payment_id is not null)
+);
+
+-- A booking can be paid only once per stage.
+create unique index if not exists project_payments_one_paid_per_stage
+  on public.project_payments (booking_id, stage) where status = 'paid';
+create index if not exists project_payments_booking_idx on public.project_payments (booking_id);
 
 -- ---------------------------------------------------------------------------
 -- Razorpay webhook log (also stops the same event being processed twice)
@@ -162,16 +187,18 @@ create trigger touch_project_bookings before update on public.project_bookings
 alter table public.project_inquiries     enable row level security;
 alter table public.consultation_bookings enable row level security;
 alter table public.project_bookings      enable row level security;
+alter table public.project_payments      enable row level security;
 alter table public.payment_events        enable row level security;
 
 alter table public.project_inquiries     force row level security;
 alter table public.consultation_bookings force row level security;
 alter table public.project_bookings      force row level security;
+alter table public.project_payments      force row level security;
 alter table public.payment_events        force row level security;
 
-revoke all on public.project_inquiries, public.consultation_bookings, public.project_bookings, public.payment_events
+revoke all on public.project_inquiries, public.consultation_bookings, public.project_bookings, public.project_payments, public.payment_events
   from anon, authenticated;
 revoke execute on function public.make_reference(text) from anon, authenticated, public;
 grant execute on function public.make_reference(text) to service_role;
-grant all on public.project_inquiries, public.consultation_bookings, public.project_bookings, public.payment_events
+grant all on public.project_inquiries, public.consultation_bookings, public.project_bookings, public.project_payments, public.payment_events
   to service_role;
